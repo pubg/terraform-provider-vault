@@ -60,6 +60,16 @@ data "template_file" "example_template" {
 }
 ```
 
+### KV v2 metadata
+
+An explicit KV v2 metadata API path is read without adding the `data/` prefix.
+
+```hcl
+data "vault_generic_secret" "example_metadata" {
+  path = "example/metadata/creds"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:

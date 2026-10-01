@@ -52,6 +52,53 @@ func TestDataSourceGenericSecret_v2(t *testing.T) {
 	})
 }
 
+func TestDataSourceGenericSecret_v2MetadataPath(t *testing.T) {
+	mount := acctest.RandomWithPrefix("tf-acctest-kv")
+	name := acctest.RandomWithPrefix("foo")
+	resourceName := "data.vault_generic_secret.test"
+
+	resource.Test(t, resource.TestCase{
+		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories(context.Background(), t),
+		PreCheck:                 func() { testutil.TestAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: testDataSourceV2MetadataConfig(mount, name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "data.current_version", "1"),
+					resource.TestCheckResourceAttr(resourceName, "data.custom_metadata", `{"owner":"platform"}`),
+					resource.TestCheckResourceAttrSet(resourceName, "data.versions"),
+				),
+			},
+		},
+	})
+}
+
+func testDataSourceV2MetadataConfig(mount, name string) string {
+	return fmt.Sprintf(`
+resource "vault_mount" "test" {
+  path = %q
+  type = "kv-v2"
+}
+
+resource "vault_kv_secret_v2" "test" {
+  mount               = vault_mount.test.path
+  name                = %q
+  delete_all_versions = true
+  data_json            = jsonencode({ value = "test" })
+
+  custom_metadata {
+    data = {
+      owner = "platform"
+    }
+  }
+}
+
+data "vault_generic_secret" "test" {
+  path = "${vault_mount.test.path}/metadata/${vault_kv_secret_v2.test.name}"
+}
+`, mount, name)
+}
+
 func testDataSourceV2Secret_config(mount, path string) string {
 	return fmt.Sprintf(`
 resource "vault_mount" "test" {

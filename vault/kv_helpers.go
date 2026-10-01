@@ -13,19 +13,17 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-func versionedSecret(requestedVersion int, path string, client *api.Client) (*api.Secret, error) {
+func versionedSecret(requestedVersion int, path string, client *api.Client, preserveKVV2MetadataPath bool) (*api.Secret, error) {
 	mountPath, v2, err := isKVv2(path, client)
 	if err != nil {
 		return nil, err
 	}
 
 	var versionParam map[string]string
+	readKVV2Data := v2 && (!preserveKVV2MetadataPath || !isKVV2MetadataPath(path, mountPath))
 
-	if v2 {
+	if readKVV2Data {
 		path = addPrefixToVKVPath(path, mountPath, "data")
-		if err != nil {
-			return nil, err
-		}
 
 		if requestedVersion > 0 {
 			versionParam = map[string]string{
@@ -39,7 +37,7 @@ func versionedSecret(requestedVersion int, path string, client *api.Client) (*ap
 		return nil, err
 	}
 
-	if v2 && secret != nil {
+	if readKVV2Data && secret != nil {
 		// This is a v2, grab the data field
 		if data, ok := secret.Data["data"]; ok && data != nil {
 			if dataMap, ok := data.(map[string]interface{}); ok {
@@ -49,6 +47,11 @@ func versionedSecret(requestedVersion int, path string, client *api.Client) (*ap
 	}
 
 	return secret, nil
+}
+
+func isKVV2MetadataPath(p, mountPath string) bool {
+	metadataPath := path.Join(mountPath, "metadata")
+	return p == metadataPath || strings.HasPrefix(p, metadataPath+"/")
 }
 
 func kvReadRequest(client *api.Client, path string, params map[string]string) (*api.Secret, error) {

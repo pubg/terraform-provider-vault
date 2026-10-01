@@ -200,7 +200,7 @@ func genericSecretResourceRead(d *schema.ResourceData, meta interface{}) error {
 
 	if shouldRead {
 		log.Printf("[DEBUG] Reading %s from Vault", path)
-		secret, err := versionedSecret(latestSecretVersion, path, client)
+		secret, err := versionedSecret(latestSecretVersion, path, client, false)
 		if err != nil {
 			return fmt.Errorf("error reading from Vault: %s", err)
 		}

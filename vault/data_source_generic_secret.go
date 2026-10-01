@@ -93,7 +93,7 @@ func genericSecretDataSourceRead(d *schema.ResourceData, meta interface{}) error
 	secretVersion := d.Get("version").(int)
 	log.Printf("[DEBUG] Reading %s %d from Vault", path, secretVersion)
 
-	secret, err := versionedSecret(secretVersion, path, client)
+	secret, err := versionedSecret(secretVersion, path, client, true)
 	if err != nil {
 		return fmt.Errorf("error reading from Vault: %s", err)
 	}
